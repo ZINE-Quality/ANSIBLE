@@ -1,0 +1,35 @@
+---
+- name: Send email if disk space utilization is over 80%
+  hosts: [all]
+
+  tasks:
+
+    - name: Check disk space utilization
+      shell: df -h | awk 'NR==3 {print $5}'
+      register: disk_usage
+      when: ansible_facts['os_family'] == "Debian"
+
+    - name: Check disk space utilization Fedora
+      shell: df -h | awk 'NR==2 {print $5}'
+      register: disk_usage_Fedora
+      when: ansible_facts['os_family'] == "RedHat" and ansible_facts['distribution_version'] is version( '6.4', '>=')
+
+    - name: Send email if disk space utilization is over 80%
+      mail:
+        host: <relay.domain.com>
+        port: 587
+        from: <email@domain>
+        to: <email@domain>
+        subject: Linux Disk Space Utilization Warning
+        body: The disk space utilization on {{ inventory_hostname }} is over {{ disk_usage.stdout }}. Please check the disk usage and free up some space if necessary.
+      when: disk_usage.stdout[:-1]|int > 80
+
+    - name: Send email if disk space utilization is over 80%
+      mail:
+        host: <relay.domain.com>
+        port: 587
+        from: <email@domain>
+        to: <email@domain>
+        subject: Linux Disk Space Utilization Warning
+        body: The disk space utilization on {{ inventory_hostname }} is over {{ disk_usage_Fedora.stdout }}. Please check the disk.
+      when: disk_usage_Fedora.stdout[:-1]|int > 80
