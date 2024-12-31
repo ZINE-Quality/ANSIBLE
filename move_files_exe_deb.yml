@@ -1,0 +1,32 @@
+---
+- hosts: all
+  become: yes
+  tasks:
+
+    - name: copy .deb file to servers
+      copy:
+        src: /home/<user>/program.deb
+        dest: /tmp
+
+    - name: copy shell script that executes program.deb to servers
+      copy:
+        src: /home/<user>/install.sh
+        dest: /tmp
+
+    - name: Install gdebi
+      apt:
+        name: gdebi
+        state: present
+
+    - name: Ensure the script has execute permissions
+      file:
+        path: /tmp/install.sh
+        mode: '0755'
+        state: file
+      become: true
+
+    - name: Run Bash script
+      shell: /tmp/install.sh
+      become: true  # Execute this task with sudo privileges
+
+#install.sh needs to be created and set to run: DEBIAN_FRONTEND=noninteractive apt install /tmp/program.deb -y
