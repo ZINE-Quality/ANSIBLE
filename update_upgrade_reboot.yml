@@ -1,0 +1,42 @@
+---
+- hosts: all
+  become: true
+  name: Run Updates on RPM and APT Linux
+
+  tasks:
+    -   name: Get dmesg
+        ansible.builtin.command: dmesg
+        register: dmesg_output
+
+    -   name: Assert that host is stable
+        ansible.builtin.assert:
+         that:
+          - "'FUNCTION TRACING IS CORRUPTED' not in dmesg_output.stdout"
+         fail_msg: 'System Instability Detected'
+
+    -   name: Update apt package cache (Ubuntu)
+        apt:
+          update_cache: yes
+        when: ansible_facts['os_family'] == "Debian"
+
+    -   name: Upgrade all packages (Ubuntu)
+        apt:
+          upgrade: dist
+          autoremove: yes
+          autoclean: yes
+          update_cache: yes
+        when: ansible_facts['os_family'] == "Debian"
+
+    -   name: Update apt package cache
+        apt:
+          update_cache: yes
+        when: ansible_facts['os_family'] == "Debian"
+
+    -   name: Update dnf package cache (Fedora)
+        ansible.builtin.dnf:
+          name: "*"
+          state: latest
+        when: ansible_facts['os_family'] == "RedHat" and ansible_facts['distribution_version'] is version( '6.4', '>=')
+
+    -   name: Reboot
+        reboot:
